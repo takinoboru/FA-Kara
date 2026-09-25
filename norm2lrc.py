@@ -130,6 +130,11 @@ def split_long_segments(elements, max_length=20):
         i += 1
 
 def process_main(result_list, tag_offset=-150, bpm=60, beats_per_bar=3):
+    if not result_list:
+        raise ValueError(
+            "Cannot build ruby LRC because lyric analysis returned no items. "
+            "Check the lyric format and --lang option."
+        )
     result = []
     current_line = ""
     last_end = None
@@ -183,7 +188,7 @@ def process_main(result_list, tag_offset=-150, bpm=60, beats_per_bar=3):
     if last_end:
         current_line += last_end
     result.append(current_line)
-    if item['orig']!='\n':
+    if result_list[-1].get('orig') != '\n':
         result.append("\n")
     result.append("\n@Offset="+str(tag_offset))
     return "".join(result)

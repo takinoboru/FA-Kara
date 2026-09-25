@@ -4,6 +4,8 @@ FA-Kara 是一个面向卡拉 OK 字幕制作的自动打轴工具。它以“�
 
 项目主要参考 [yohane](https://github.com/Japan7/yohane) 和 [Forced-Alignment-For-NicoKara](https://github.com/oHEILIo/Forced-Alignment-For-NicoKara/)。当前版本主要强化了日语歌曲、混合语种歌词、长音频分块、局部重对轴、Aegisub 后处理、批量压制和批量合并流程。
 
+本仓库是 [moriwx/FA-Kara](https://github.com/moriwx/FA-Kara) 的衍生版本，并沿用 MIT License。图形界面、时间线校对和发布配置由本 fork 增补；原作者版权声明保留在 `LICENSE` 中。
+
 ## 主要功能
 
 - 从人声音频和注音歌词自动生成 ASS 字幕。
@@ -36,6 +38,52 @@ FA-Kara 是一个面向卡拉 OK 字幕制作的自动打轴工具。它以“�
 ``` shell
 python main.py -p songs/song_a
 python prepare_kara_ass.py songs/song_a/song_a.ass
+```
+
+## 开箱即用安装
+
+发布页中的 `fa-kara-studio-source.zip` 只包含程序、配置和启动脚本，不包含任何歌曲、音视频、模型缓存或用户运行记录。解压后在项目目录执行：
+
+macOS / Linux：
+
+``` shell
+chmod +x scripts/setup.sh scripts/run_gui.sh
+./scripts/setup.sh
+./scripts/run_gui.sh
+```
+
+Windows PowerShell：
+
+``` powershell
+Set-ExecutionPolicy -Scope Process Bypass
+.\scripts\setup.ps1
+.\scripts\run_gui.ps1
+```
+
+也可以使用 Conda：
+
+``` shell
+conda env create -f environment.yml
+conda activate fa-kara
+streamlit run kara_gui.py
+```
+
+安装脚本默认安装 CPU 兼容版 PyTorch。NVIDIA GPU 用户建议先按 [PyTorch 官方安装器](https://pytorch.org/get-started/locally/)选择对应 CUDA 版本，再安装 `requirements-gui.txt`。音频转码、视频压制和合并需要系统能够找到 `ffmpeg` 与 `ffprobe`。
+
+## 图形界面
+
+项目提供一个 Streamlit 图形界面，可上传注音歌词、人声音频和检查视频，调整推理速度、分块、尾音修正、Offset、BPM 等参数，运行后直接预览并下载 ASS/LRC。视频预览会加载生成的 ASS 字幕，音频预览会同步显示 Ruby LRC 歌词。
+
+安装 GUI 依赖：
+
+``` shell
+python -m pip install -r requirements-gui.txt
+```
+
+启动界面：
+
+``` shell
+streamlit run kara_gui.py
 ```
 
 然后在 Aegisub 中打开 `songs/song_a/song_a_prepared.ass`，运行 `Automation > Apply karaoke template` 并保存。确认同文件夹下有唯一源视频，或没有视频但有背景图片后压制：

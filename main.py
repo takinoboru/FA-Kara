@@ -1180,7 +1180,22 @@ def main():
     ruby_tag_offset = args.offset
     bpm = args.bpm
     beats_per_bar = args.bpb
-    lrc_language = args.lang.lower()
+    language_aliases = {
+        'jp': 'ja',
+        'jpn': 'ja',
+        'zh': 'zhen',
+        'zh-cn': 'zhen',
+        'cn': 'zhen',
+        'en': 'jaen',
+    }
+    requested_language = args.lang.lower()
+    lrc_language = language_aliases.get(requested_language, requested_language)
+    supported_languages = {'auto', 'ja', 'jaen', 'zhen'}
+    if lrc_language not in supported_languages:
+        raise ValueError(
+            f"Unsupported --lang value: {args.lang}. "
+            "Use auto, ja, jaen, or zhen (aliases jp/jpn, zh/cn, and en are also accepted)."
+        )
     txt_format = args.txt_format.lower()
     output_characters_per_line = args.characters_per_line
     chunk_seconds = args.chunk_seconds
@@ -1317,6 +1332,12 @@ def main():
 
     end_time = time.time()
     print("Lyrics text analysis executed in", round(end_time - start_time, 3), "seconds")
+
+    if not alignment_tokens:
+        raise ValueError(
+            "Lyrics analysis produced no alignment tokens. "
+            "Check the lyric format and --lang value; supported values are auto, ja, jaen, and zhen."
+        )
 
     audio_file, sr = load_audio_file(input_audio_path)
     non_silent_ranges = non_silent_recog(audio_file, sr, silent_window_s, tail_thres_pct, tail_thres_ratio)

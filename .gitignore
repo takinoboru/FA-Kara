@@ -1,6 +1,19 @@
 # Python cache
 __pycache__/
 *.py[cod]
+.venv/
+.env
+.DS_Store
+
+# GUI runtime state and local release output
+.kara_gui_runs/
+dist/
+
+# Local models and caches
+*.pt
+*.pth
+*.ckpt
+*.safetensors
 
 # Local pronunciation overrides
 pronunciations.txt
@@ -19,6 +32,23 @@ o_*.ass
 o_*.lrc
 *_realign.txt
 *.mp4
+
+# Never publish root-level user songs or generated subtitles
+/*.wav
+/*.mp3
+/*.flac
+/*.m4a
+/*.ogg
+/*.aac
+/*.jpg
+/*.jpeg
+/*.png
+/*.ass
+/*.lrc
+/*.txt
+!/requirements.txt
+!/requirements-core.txt
+!/requirements-gui.txt
 
 # Per-song work folders
 songs/*/*.txt

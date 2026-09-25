@@ -1,0 +1,9 @@
+# Install torch and torchaudio separately for the target CPU/GPU platform.
+# The setup scripts install CPU-compatible wheels by default.
+janome>=0.5,<0.6
+librosa>=0.11,<0.12
+nltk>=3.9,<4
+numpy>=2.0,<3
+pykakasi>=2.3,<3
+pyphen>=0.17,<0.18
+pypinyin>=0.55,<0.56

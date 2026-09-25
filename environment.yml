@@ -1,0 +1,11 @@
+name: fa-kara
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip>=24
+  - ffmpeg>=6
+  - pip:
+      - torch>=2.6
+      - torchaudio>=2.6
+      - -r requirements-gui.txt

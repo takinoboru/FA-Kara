@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <style>
+    :root { color-scheme: light; font-family: Inter, "PingFang SC", system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #172033; background: transparent; outline: none; }
+    .shell { border: 1px solid #b9ccdf; border-radius: 12px; background: #fff; overflow: hidden; }
+    .filebar, .nav, .toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
+    .filebar { background: #10233d; color: #f8fbff; }
+    .file-name { font-weight: 850; font-size: 15px; margin-right: auto; }
+    .star { display: none; color: #ffd84f; font-size: 20px; padding-left: 3px; }
+    .star.visible { display: inline; }
+    .save-state { color: #b8cadb; font-size: 12px; }
+    .nav { background: #e9f2fa; border-bottom: 1px solid #cbd9e6; }
+    .nav select { flex: 1; min-width: 220px; border: 1px solid #8da9c2; border-radius: 7px; background: #fff; color: #172033; padding: 7px 9px; font-weight: 700; }
+    button { border: 1px solid #8da9c2; border-radius: 7px; background: #fff; color: #173454; padding: 6px 10px; cursor: pointer; font-weight: 750; }
+    button:hover:not(:disabled) { border-color: #0b77c5; color: #0b77c5; }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    .primary { background: #0b77c5; color: #fff; border-color: #0b77c5; }
+    .primary:hover:not(:disabled) { color: #fff; background: #0865a7; }
+    .sync { background: #0f9f8f; color: #fff; border-color: #087d72; }
+    .sync:hover:not(:disabled) { color: #fff; background: #087d72; }
+    .media-panel { display: none; padding: 12px; background: #071525; }
+    .media-panel.visible { display: block; }
+    video { display: block; width: 100%; max-height: 340px; background: #000; border-radius: 8px; }
+    audio { display: block; width: 100%; }
+    .karaoke { min-height: 68px; display: flex; justify-content: center; align-items: center; gap: .08em; padding: 12px 16px 8px; color: #f8fbff; font-size: clamp(20px, 3.1vw, 30px); font-weight: 750; line-height: 1.65; text-align: center; flex-wrap: wrap; }
+    .karaoke ruby { ruby-position: over; }
+    .karaoke rt { font-size: .48em; font-weight: 650; }
+    .karaoke .past { color: #62ddca; }
+    .karaoke .active { color: #ffd84f; text-shadow: 0 0 12px #ffc40066; }
+    .karaoke .future { color: #f8fbff; }
+    .toolbar { background: #eef5fb; border-top: 1px solid #29496b; border-bottom: 1px solid #d5e0eb; }
+    .time-readout { color: #173454; font: 700 12px ui-monospace, SFMono-Regular, Menlo, monospace; min-width: 78px; }
+    .hint { margin-left: auto; color: #5b6678; font-size: 12px; }
+    .sync-toggle { display: inline-flex; align-items: center; gap: 5px; color: #34516d; font-size: 12px; font-weight: 700; }
+    .viewport { height: 280px; overflow-x: auto; overflow-y: hidden; position: relative; background: #f4f8fc; }
+    .track { position: relative; height: 262px; min-width: 100%; }
+    .axis { position: absolute; left: 0; right: 0; top: 215px; height: 2px; background: #68849f; z-index: 3; }
+    .tick { position: absolute; top: 210px; height: 12px; width: 1px; background: #9aafc2; z-index: 4; }
+    .tick.medium { top: 206px; height: 20px; background: #7891a9; }
+    .tick.major { top: 32px; height: 198px; width: 2px; background: #34597955; }
+    .tick-label { position: absolute; top: 7px; transform: translateX(-50%); color: #173454; font-size: 12px; font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; z-index: 6; }
+    .segment { position: absolute; top: 40px; bottom: 38px; border-right: 1px solid #9fb5c8; z-index: 1; }
+    .segment.theme { background: #d9f6f0; }
+    .segment.light { background: #fff; }
+    .point { position: absolute; top: 205px; width: 22px; height: 22px; margin-left: -11px; border-radius: 50%; background: #0f9f8f; border: 3px solid white; box-shadow: 0 0 0 1px #087d72, 0 2px 6px #40617f55; cursor: ew-resize; touch-action: none; z-index: 8; }
+    .point.endpoint { background: #0b77c5; box-shadow: 0 0 0 1px #075b96, 0 2px 6px #40617f55; }
+    .point .tooltip { display: none; position: absolute; left: 50%; bottom: 29px; transform: translateX(-50%); background: #10233d; color: white; border-radius: 5px; padding: 5px 7px; font: 700 11px ui-monospace, SFMono-Regular, Menlo, monospace; white-space: nowrap; pointer-events: none; }
+    .point:hover .tooltip, .point:focus .tooltip { display: block; }
+    .word-group { position: absolute; top: 100px; transform: translateX(-50%); text-align: center; white-space: nowrap; overflow: visible; z-index: 5; }
+    .ruby-reading { min-height: 25px; color: #845400; font-size: 13px; font-weight: 800; line-height: 1.15; border-radius: 4px; padding: 2px 4px; cursor: text; }
+    .ruby-reading:empty { cursor: default; }
+    .ruby-reading:not(:empty):hover, .ruby-reading:focus { background: #fff2bd; outline: 2px solid #f3c64b; }
+    .surface { color: #111827; font-size: 17px; font-weight: 850; line-height: 1.25; padding-top: 5px; }
+    .ruby-input { width: 92px; border: 2px solid #0b77c5; border-radius: 5px; padding: 3px 5px; text-align: center; font-size: 13px; }
+    .playhead { display: none; position: absolute; top: 32px; bottom: 28px; width: 3px; margin-left: -1px; background: #ed3f3f; box-shadow: 0 0 0 1px #fff, 0 0 10px #ed3f3faa; z-index: 7; pointer-events: none; }
+    .playhead::before { content: ""; position: absolute; top: -3px; left: -5px; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 8px solid #ed3f3f; }
+    .notice { padding: 7px 12px; background: #fff8da; color: #6d5500; border-top: 1px solid #efd77b; font-size: 12px; }
+  </style>
+</head>
+<body tabindex="0">
+  <div class="shell">
+    <div class="filebar">
+      <span class="file-name">Ruby 字幕轴<span id="star" class="star">*</span></span>
+      <span id="saveState" class="save-state">没有未保存修改</span>
+      <button id="undo" title="撤销（Ctrl/⌘+Z）">↶ 撤销</button>
+      <button id="redo" title="重做（Ctrl/⌘+Shift+Z 或 Ctrl+Y）">↷ 重做</button>
+      <button id="syncPreview" class="sync">↔ 同步到视频预览</button>
+      <button id="saveFile" class="primary">保存到字幕文件</button>
+    </div>
+    <div class="nav">
+      <button id="previous">← 上一句</button>
+      <select id="lineSelect" aria-label="选择精修歌词"></select>
+      <button id="next">下一句 →</button>
+    </div>
+    <div id="mediaPanel" class="media-panel">
+      <video id="video" controls preload="metadata"></video>
+      <audio id="audio" controls preload="metadata"></audio>
+      <div id="karaoke" class="karaoke">播放后在这里检查逐词高亮与假名注音</div>
+    </div>
+    <div class="toolbar">
+      <button id="play" title="播放或暂停（空格）">▶ 播放</button>
+      <button id="jump" title="让视频定位到当前精修句">编辑器 → 视频</button>
+      <span id="current" class="time-readout">00:00.00</span>
+      <label class="sync-toggle"><input id="bidirectional" type="checkbox" checked> 视频 ↔ 编辑器双向跟随</label>
+      <button id="zoomOut" title="缩小时间线">−</button>
+      <button id="zoomIn" title="放大时间线">＋</button>
+      <button id="resetZoom" title="恢复默认缩放">适配</button>
+      <span class="hint">0.05 秒刻度 · 0.01 秒拖动精度 · 滚轮横移 · Ctrl/⌘+滚轮缩放</span>
+    </div>
+    <div id="viewport" class="viewport"><div id="track" class="track"></div></div>
+    <div id="notice" class="notice">拖动和注音编辑只保存在本页面；点击“同步到视频预览”后才会改变卡拉 OK 预览。</div>
+  </div>
+  <script>
+    const clone = value => JSON.parse(JSON.stringify(value));
+    let editorLines = [], originalLines = [], playbackLines = [], originalPlaybackLines = [];
+    let rubyEdits = {}, previewRubyEdits = {};
+    let dirtyLines = new Set(), previewDirtyLines = new Set();
+    let undoStack = [], redoStack = [];
+    let selected = 0, scale = 220, origin = 0, endTime = 0, drag = null, media = null;
+    let renderedKaraoke = '', initialized = false, fileDirty = false;
+    const track = document.getElementById('track'), viewport = document.getElementById('viewport');
+    const video = document.getElementById('video'), audio = document.getElementById('audio'), karaoke = document.getElementById('karaoke');
+
+    function post(type, extra = {}) { window.parent.postMessage({ isStreamlitMessage: true, type, ...extra }, '*'); }
+    function currentLine() { return editorLines[selected]; }
+    function currentPoints() { return currentLine()?.points || []; }
+    function formatPrecise(seconds) {
+      const cs = Math.max(0, Math.round(seconds * 100));
+      return `${String(Math.floor(cs / 6000)).padStart(2, '0')}:${String(Math.floor((cs % 6000) / 100)).padStart(2, '0')}.${String(cs % 100).padStart(2, '0')}`;
+    }
+    function formatMajor(seconds) {
+      const whole = Math.max(0, Math.round(seconds));
+      return `${String(Math.floor(whole / 60)).padStart(2, '0')}:${String(whole % 60).padStart(2, '0')}`;
+    }
+    function rubyIdsFor(token) { return Array.isArray(token.ruby_ids) && token.ruby_ids.length ? token.ruby_ids : token.ruby_id ? [token.ruby_id] : []; }
+    function readingFor(token, edits = rubyEdits) { const id = rubyIdsFor(token).find(item => edits[item]); return id ? String(edits[id].reading || '') : String(token.ruby || ''); }
+    function snapshot() {
+      return {
+        editorLines: clone(editorLines), rubyEdits: clone(rubyEdits), dirtyLines: [...dirtyLines],
+        playbackLines: clone(playbackLines), previewRubyEdits: clone(previewRubyEdits), previewDirtyLines: [...previewDirtyLines],
+      };
+    }
+    function recordHistory() { undoStack.push(snapshot()); if (undoStack.length > 100) undoStack.shift(); redoStack = []; }
+    function restoreSnapshot(state) {
+      editorLines = clone(state.editorLines); rubyEdits = clone(state.rubyEdits); dirtyLines = new Set(state.dirtyLines);
+      playbackLines = clone(state.playbackLines); previewRubyEdits = clone(state.previewRubyEdits); previewDirtyLines = new Set(state.previewDirtyLines);
+      selected = Math.min(selected, editorLines.length - 1); renderedKaraoke = ''; renderAll();
+    }
+    function undo() { if (!undoStack.length) return; redoStack.push(snapshot()); restoreSnapshot(undoStack.pop()); }
+    function redo() { if (!redoStack.length) return; undoStack.push(snapshot()); restoreSnapshot(redoStack.pop()); }
+    function markChanged(lineIndex) { dirtyLines.add(lineIndex); previewDirtyLines.add(lineIndex); updateStatus(); }
+    function updateStatus() {
+      fileDirty = dirtyLines.size > 0 || Object.keys(rubyEdits).length > 0;
+      document.getElementById('star').classList.toggle('visible', fileDirty);
+      const pendingPreview = previewDirtyLines.size;
+      document.getElementById('saveState').textContent = !fileDirty ? '没有未保存修改' : pendingPreview ? `未保存 · ${pendingPreview} 句尚未同步预览` : '预览已同步 · 尚未保存到文件';
+      document.getElementById('undo').disabled = !undoStack.length;
+      document.getElementById('redo').disabled = !redoStack.length;
+      document.getElementById('syncPreview').disabled = !previewDirtyLines.has(currentLine()?.line_index);
+      document.getElementById('saveFile').disabled = !fileDirty || previewDirtyLines.size > 0;
+      document.getElementById('previous').disabled = selected <= 0;
+      document.getElementById('next').disabled = selected >= editorLines.length - 1;
+    }
+    function setSelected(index, seekVideo = false) {
+      selected = Math.max(0, Math.min(editorLines.length - 1, Number(index)));
+      document.getElementById('lineSelect').value = String(selected); renderTimeline(); updateStatus();
+      if (seekVideo && media && currentPoints().length) { media.currentTime = currentPoints()[0].time; updatePlayhead(); }
+    }
+    function populateLineSelect() {
+      const select = document.getElementById('lineSelect'); select.replaceChildren();
+      editorLines.forEach((line, index) => { const option = document.createElement('option'); option.value = String(index); option.textContent = `${String(index + 1).padStart(3, '0')} · ${line.text}`; select.appendChild(option); });
+      select.value = String(selected);
+    }
+    function xFor(time) { return 34 + (time - origin) * scale; }
+    function renderTicks() {
+      const firstTick = Math.ceil(origin * 20), lastTick = Math.floor(endTime * 20);
+      for (let tickIndex = firstTick; tickIndex <= lastTick; tickIndex++) {
+        const time = tickIndex / 20, tick = document.createElement('div');
+        tick.className = `tick${tickIndex % 20 === 0 ? ' major' : tickIndex % 5 === 0 ? ' medium' : ''}`; tick.style.left = `${xFor(time)}px`; track.appendChild(tick);
+        if (tickIndex % 20 === 0) { const label = document.createElement('div'); label.className = 'tick-label'; label.style.left = `${xFor(time)}px`; label.textContent = formatMajor(time); track.appendChild(label); }
+      }
+    }
+    function updateTimelinePositions() {
+      const points = currentPoints();
+      track.querySelectorAll('.point').forEach(point => { const index = Number(point.dataset.index); point.style.left = `${xFor(points[index].time)}px`; const tip = point.querySelector('.tooltip'); if (tip) tip.textContent = formatPrecise(points[index].time); });
+      track.querySelectorAll('.word-group').forEach(group => { const index = Number(group.dataset.index), next = points[index + 1]; group.style.left = `${(xFor(points[index].time) + xFor(next.time)) / 2}px`; group.style.minWidth = `${Math.max(34, xFor(next.time) - xFor(points[index].time) - 5)}px`; });
+      track.querySelectorAll('.segment').forEach(segment => { const index = Number(segment.dataset.index), next = points[index + 1]; segment.style.left = `${xFor(points[index].time)}px`; segment.style.width = `${Math.max(0, xFor(next.time) - xFor(points[index].time))}px`; });
+    }
+    function editReading(label, token, duration) {
+      if (!rubyIdsFor(token).length) return;
+      const input = document.createElement('input'); input.className = 'ruby-input'; input.value = readingFor(token); label.replaceChildren(input); input.focus(); input.select();
+      let finished = false;
+      const finish = save => {
+        if (finished) return; finished = true; const value = input.value.trim();
+        if (save && value && value !== readingFor(token)) {
+          recordHistory(); const linkedIds = rubyIdsFor(token); linkedIds.forEach(id => { rubyEdits[id] = { reading: value, duration: Math.max(.01, duration) }; });
+          editorLines.forEach(line => line.points.forEach(item => { if (rubyIdsFor(item).some(id => linkedIds.includes(id))) item.ruby = value; })); markChanged(currentLine().line_index);
+        }
+        renderTimeline(); updateStatus();
+      };
+      input.onkeydown = event => { if (event.key === 'Enter') { event.preventDefault(); finish(true); } if (event.key === 'Escape') { event.preventDefault(); finish(false); } event.stopPropagation(); };
+      input.onblur = () => finish(true);
+    }
+    function renderTimeline() {
+      track.replaceChildren(); const points = currentPoints(); if (!points.length) return;
+      origin = Math.floor((points[0].time - .5) * 20) / 20; endTime = Math.ceil((points[points.length - 1].time + .5) * 20) / 20;
+      track.style.width = `${Math.max(viewport.clientWidth, xFor(endTime) + 34)}px`;
+      for (let index = 0; index < points.length - 1; index++) { const segment = document.createElement('div'); segment.className = `segment ${index % 2 ? 'light' : 'theme'}`; segment.dataset.index = index; track.appendChild(segment); }
+      const axis = document.createElement('div'); axis.className = 'axis'; track.appendChild(axis); renderTicks();
+      const playhead = document.createElement('div'); playhead.id = 'playhead'; playhead.className = 'playhead'; track.appendChild(playhead);
+      points.forEach((token, index) => {
+        const point = document.createElement('div'); point.className = `point${index === points.length - 1 ? ' endpoint' : ''}`; point.tabIndex = 0; point.dataset.index = index;
+        const tooltip = document.createElement('span'); tooltip.className = 'tooltip'; tooltip.textContent = formatPrecise(token.time); point.appendChild(tooltip);
+        point.addEventListener('pointerdown', event => { point.setPointerCapture(event.pointerId); drag = { index, startX: event.clientX, startTime: points[index].time, pointerId: event.pointerId, recorded: false }; });
+        point.addEventListener('pointermove', event => {
+          if (!drag || drag.pointerId !== event.pointerId) return; const i = drag.index;
+          let nextTime = drag.startTime + (event.clientX - drag.startX) / scale; if (i > 0) nextTime = Math.max(nextTime, points[i - 1].time); if (i < points.length - 1) nextTime = Math.min(nextTime, points[i + 1].time);
+          nextTime = Math.round(nextTime * 100) / 100; if (nextTime === points[i].time) return;
+          if (!drag.recorded) { recordHistory(); drag.recorded = true; }
+          points[i].time = nextTime; markChanged(currentLine().line_index); updateTimelinePositions(); updatePlayhead();
+        });
+        const finish = event => { if (!drag || drag.pointerId !== event.pointerId) return; const changed = drag.recorded; drag = null; if (changed) renderTimeline(); };
+        point.addEventListener('pointerup', finish); point.addEventListener('pointercancel', finish); track.appendChild(point);
+        if (index < points.length - 1 && token.text && token.text !== '●') {
+          const next = points[index + 1], group = document.createElement('div'); group.className = 'word-group'; group.dataset.index = index;
+          const reading = document.createElement('div'); reading.className = 'ruby-reading'; reading.tabIndex = rubyIdsFor(token).length ? 0 : -1; reading.textContent = readingFor(token);
+          if (rubyIdsFor(token).length) { reading.title = '双击或按回车编辑假名'; reading.ondblclick = () => editReading(reading, token, next.time - token.time); reading.onkeydown = event => { if (event.key === 'Enter') { event.preventDefault(); editReading(reading, token, next.time - token.time); } }; }
+          const surface = document.createElement('div'); surface.className = 'surface'; surface.textContent = token.text; group.append(reading, surface); track.appendChild(group);
+        }
+      }); updateTimelinePositions(); updatePlayhead();
+    }
+    function lineToPlayback(line) {
+      const tokens = [];
+      for (let index = 0; index < line.points.length - 1; index++) { const point = line.points[index]; if (!point.text || point.text === '●') continue; tokens.push({ text: point.text, start: point.time, end: line.points[index + 1].time, ruby: point.ruby || '', ruby_id: point.ruby_id || '', ruby_ids: point.ruby_ids || [] }); }
+      return { line_index: line.line_index, start: line.points[0].time, end: line.points[line.points.length - 1].time, tokens };
+    }
+    function syncPreview() {
+      const line = currentLine(), replacement = lineToPlayback(line), index = playbackLines.findIndex(item => item.line_index === line.line_index);
+      if (index >= 0) playbackLines[index] = replacement; else playbackLines.push(replacement);
+      replacement.tokens.forEach(token => rubyIdsFor(token).forEach(id => { if (rubyEdits[id]) previewRubyEdits[id] = clone(rubyEdits[id]); }));
+      previewDirtyLines.delete(line.line_index); renderedKaraoke = ''; if (media) media.currentTime = line.points[0].time; updatePlayhead(); updateStatus();
+    }
+    function updateKaraoke() {
+      if (!media) return; const time = media.currentTime || 0; document.getElementById('current').textContent = formatPrecise(time);
+      const line = playbackLines.find(item => time >= Number(item.start) && time <= Number(item.end));
+      const signature = line ? `${line.line_index}:${line.tokens.map(token => `${token.text}:${readingFor(token, previewRubyEdits)}`).join('|')}:${Math.floor(time * 100)}` : 'none';
+      if (signature !== renderedKaraoke) {
+        renderedKaraoke = signature; karaoke.replaceChildren();
+        if (!line) karaoke.textContent = '当前播放位置没有 Ruby 歌词';
+        else line.tokens.forEach(token => { const ruby = document.createElement('ruby'); ruby.className = time >= Number(token.end) ? 'past' : time >= Number(token.start) ? 'active' : 'future'; const surface = document.createElement('span'); surface.textContent = token.text; ruby.appendChild(surface); const reading = readingFor(token, previewRubyEdits); if (reading) { const rt = document.createElement('rt'); rt.textContent = reading; ruby.appendChild(rt); } karaoke.appendChild(ruby); });
+      }
+      if (line && document.getElementById('bidirectional').checked) { const editorIndex = editorLines.findIndex(item => item.line_index === line.line_index); if (editorIndex >= 0 && editorIndex !== selected) setSelected(editorIndex, false); }
+    }
+    function updatePlayhead() {
+      const head = document.getElementById('playhead'); if (!head || !media) return; const time = media.currentTime || 0;
+      if (time < origin || time > endTime) head.style.display = 'none'; else { head.style.display = 'block'; head.style.left = `${xFor(time)}px`; }
+      updateKaraoke();
+    }
+    function togglePlayback() { if (!media) return; if (media.paused) media.play(); else media.pause(); }
+    function configureMedia(url, kind) {
+      const next = kind === 'video' ? video : kind === 'audio' ? audio : null; video.style.display = kind === 'video' ? 'block' : 'none'; audio.style.display = kind === 'audio' ? 'block' : 'none';
+      document.getElementById('mediaPanel').classList.toggle('visible', Boolean(next && url)); if (!next || !url) { media = null; return; } media = next; if (media.getAttribute('src') !== url) media.setAttribute('src', url);
+    }
+    function resetAll() { if (!fileDirty || confirm('放弃所有尚未保存的时间轴与注音修改？')) { editorLines = clone(originalLines); playbackLines = clone(originalPlaybackLines); rubyEdits = {}; previewRubyEdits = {}; dirtyLines.clear(); previewDirtyLines.clear(); undoStack = []; redoStack = []; selected = 0; populateLineSelect(); renderAll(); } }
+    function saveFile() {
+      if (!fileDirty || previewDirtyLines.size) return;
+      const lines = [...dirtyLines].map(lineIndex => { const line = editorLines.find(item => item.line_index === lineIndex); return { line_index: line.line_index, points: line.points }; });
+      post('streamlit:setComponentValue', { value: { action: 'save', nonce: `${Date.now()}-${Math.random()}`, lines, ruby_edits: rubyEdits } });
+    }
+    function renderAll() { populateLineSelect(); renderTimeline(); updateStatus(); updateKaraoke(); }
+
+    [video, audio].forEach(item => { item.addEventListener('timeupdate', updatePlayhead); item.addEventListener('seeked', updatePlayhead); item.addEventListener('play', () => { document.getElementById('play').textContent = '❚❚ 暂停'; }); item.addEventListener('pause', () => { document.getElementById('play').textContent = '▶ 播放'; }); });
+    document.getElementById('play').onclick = togglePlayback;
+    document.getElementById('jump').onclick = () => setSelected(selected, true);
+    document.getElementById('previous').onclick = () => setSelected(selected - 1, true);
+    document.getElementById('next').onclick = () => setSelected(selected + 1, true);
+    document.getElementById('lineSelect').onchange = event => setSelected(event.target.value, true);
+    document.getElementById('undo').onclick = undo; document.getElementById('redo').onclick = redo;
+    document.getElementById('syncPreview').onclick = syncPreview; document.getElementById('saveFile').onclick = saveFile;
+    document.getElementById('zoomIn').onclick = () => { scale = Math.min(scale * 1.3, 900); renderTimeline(); };
+    document.getElementById('zoomOut').onclick = () => { scale = Math.max(scale / 1.3, 90); renderTimeline(); };
+    document.getElementById('resetZoom').onclick = () => { scale = 220; viewport.scrollLeft = 0; renderTimeline(); };
+    viewport.addEventListener('wheel', event => { event.preventDefault(); if (event.ctrlKey || event.metaKey) { scale = Math.max(90, Math.min(900, scale * (event.deltaY < 0 ? 1.15 : .87))); renderTimeline(); } else viewport.scrollLeft += event.deltaY || event.deltaX; }, { passive: false });
+    document.body.addEventListener('pointerdown', event => {
+      if (!event.target.closest('button, select, input')) document.body.focus();
+    });
+    document.addEventListener('keydown', event => {
+      if (event.target.tagName === 'INPUT') return;
+      if (event.code === 'Space') { event.preventDefault(); togglePlayback(); }
+      const command = event.ctrlKey || event.metaKey;
+      if (command && event.key.toLowerCase() === 'z') { event.preventDefault(); if (event.shiftKey) redo(); else undo(); }
+      if (command && event.key.toLowerCase() === 'y') { event.preventDefault(); redo(); }
+    });
+    const warnUnsaved = event => { if (!fileDirty) return; event.preventDefault(); event.returnValue = ''; return ''; };
+    window.addEventListener('beforeunload', warnUnsaved); try { window.parent.addEventListener('beforeunload', warnUnsaved); } catch (_) {}
+    window.addEventListener('message', event => {
+      const data = event.data; if (!data || data.type !== 'streamlit:render') return; const args = data.args || {};
+      if (!initialized) { editorLines = clone(args.editor_lines || []); originalLines = clone(editorLines); playbackLines = clone(args.playback_lines || []); originalPlaybackLines = clone(playbackLines); initialized = true; populateLineSelect(); }
+      configureMedia(String(args.media_url || ''), String(args.media_kind || '')); renderAll();
+      if (media && currentPoints().length && media.currentTime === 0) {
+        const seekInitialLine = () => { media.currentTime = currentPoints()[0].time; updatePlayhead(); };
+        if (media.readyState >= 1) seekInitialLine(); else media.addEventListener('loadedmetadata', seekInitialLine, { once: true });
+      }
+      post('streamlit:setFrameHeight', { height: args.media_url ? 900 : 500 });
+    });
+    post('streamlit:componentReady', { apiVersion: 1 }); post('streamlit:setFrameHeight', { height: 500 });
+  </script>
+</body>
+</html>
